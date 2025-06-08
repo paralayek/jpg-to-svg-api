@@ -1,4 +1,5 @@
-flask
+fastapi
+uvicorn
 pillow
 numpy
-scikit-image
+pypotrace
