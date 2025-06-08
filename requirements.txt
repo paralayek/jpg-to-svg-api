@@ -1,5 +1,4 @@
-fastapi
-uvicorn
+flask
 pillow
-svgtrace
-python-multipart
+numpy
+scikit-image
