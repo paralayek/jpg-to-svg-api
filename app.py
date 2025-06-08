@@ -1,36 +1,29 @@
-from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import FileResponse
-import os
+from flask import Flask, request, send_file
+from PIL import Image
+import numpy as np
+from skimage import measure
+import io
 
-app = FastAPI()
+app = Flask(__name__)
 
-@app.post("/api/jpg-to-svg")
-async def convert(file: UploadFile = File(...)):
-    try:
-        print("📥 Received file:", file.filename)
+@app.route('/api/jpg-to-svg', methods=['POST'])
+def convert_to_svg():
+    file = request.files['jpgFile']
+    image = Image.open(file).convert('L').resize((512, 512))
+    image_np = np.array(image)
+    threshold = image_np > 128
+    contours = measure.find_contours(threshold, 0.5)
 
-        input_path = "input.jpg"
-        output_path = "output.svg"
+    svg_data = '<?xml version="1.0" standalone="no"?>\n'
+    svg_data += '<svg xmlns="http://www.w3.org/2000/svg" version="1.1">\n'
 
-        # Save uploaded file
-        with open(input_path, "wb") as f:
-            f.write(await file.read())
+    for contour in contours:
+        path_data = "M " + " L ".join(f"{x:.2f} {y:.2f}" for y, x in contour)
+        svg_data += f'<path d="{path_data}" stroke="black" fill="none"/>\n'
 
-        # Convert image to grayscale
-        from PIL import Image
-        image = Image.open(input_path).convert("L")
-        image.save("temp.pbm")
+    svg_data += '</svg>'
 
-        # Generate SVG
-        import svgtrace
-        svg = svgtrace.trace("temp.pbm")
+    return send_file(io.BytesIO(svg_data.encode()), mimetype='image/svg+xml', as_attachment=True, download_name='converted.svg')
 
-        with open(output_path, "w") as f:
-            f.write(svg)
-
-        print("✅ Conversion complete")
-        return FileResponse(output_path, media_type="image/svg+xml", filename="converted.svg")
-
-    except Exception as e:
-        print("❌ Error:", str(e))
-        return {"error": str(e)}
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
