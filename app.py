@@ -1,17 +1,28 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import FileResponse
-import some_svg_conversion_lib  # replace with your actual library
+from PIL import Image
+from vectorizer import Vectorizer
+import os
 
 app = FastAPI()
 
 @app.post("/api/jpg-to-svg")
-async def convert_image(file: UploadFile = File(...)):
-    # Save uploaded file
-    with open("temp.jpg", "wb") as f:
+async def convert(file: UploadFile = File(...)):
+    input_path = "input.jpg"
+    output_path = "output.svg"
+
+    # Save uploaded image
+    with open(input_path, "wb") as f:
         f.write(await file.read())
 
-    # Convert to SVG (you need to write this part)
-    output_path = "output.svg"
-    some_svg_conversion_lib.convert("temp.jpg", output_path)
+    # Open and convert to grayscale
+    img = Image.open(input_path).convert("L")
+
+    # Convert to SVG
+    v = Vectorizer(img)
+    svg = v.get_svg()
+
+    with open(output_path, "w") as f:
+        f.write(svg)
 
     return FileResponse(output_path, media_type="image/svg+xml", filename="converted.svg")
