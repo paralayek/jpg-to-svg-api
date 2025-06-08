@@ -1,3 +1,9 @@
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import FileResponse
+import os
+
+app = FastAPI()
+
 @app.post("/api/jpg-to-svg")
 async def convert(file: UploadFile = File(...)):
     try:
