@@ -1,8 +1,7 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import FileResponse
 from PIL import Image
-from vectorizer import Vectorizer
-import os
+import svgtrace
 
 app = FastAPI()
 
@@ -11,17 +10,18 @@ async def convert(file: UploadFile = File(...)):
     input_path = "input.jpg"
     output_path = "output.svg"
 
-    # Save uploaded image
+    # Save uploaded file
     with open(input_path, "wb") as f:
         f.write(await file.read())
 
-    # Open and convert to grayscale
-    img = Image.open(input_path).convert("L")
+    # Open image and convert to grayscale
+    image = Image.open(input_path).convert("L")
+    image.save("temp.pbm")  # Save as PBM for svgtrace
 
-    # Convert to SVG
-    v = Vectorizer(img)
-    svg = v.get_svg()
+    # Trace to SVG
+    svg = svgtrace.trace("temp.pbm")
 
+    # Save the SVG content
     with open(output_path, "w") as f:
         f.write(svg)
 
